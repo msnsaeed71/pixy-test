@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: pixy-server
+liquibase:
+  run: true

@@ -1,0 +1,15 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/msn
+    dataSourceClassName: org.postgresql.ds.PGSimpleDataSource
+    databaseName: msn
+    serverName:
+    username: msn
+    password: msn
+server:
+  port: 8080
+  tomcat:
+    max-threads: 500
+user:
+  username: msn
+  password: 123456
