@@ -76,21 +76,19 @@ public class SessionPixyService {
     /*get single pixy session instructions and number of repeat of each instruction for client and server session from db*/
     @Transactional(readOnly = true)
     public SinglePixyInstructionsDTO getSessionPixyById(String sessionId, Boolean justClient, Boolean justServer) throws PixyException{
-        List<SessionPixy> sessionPixies = sessionPixyRepository.findAllBySessionId(sessionId);
         if (justClient != null && justClient && (justServer == null || !justServer)) {  /*if justClient send true -> just session instruction and number of the repeat of it for client type of this session id comes to result*/
             SinglePixyInstructionsDTO singlePixyInstructionsDTO = new SinglePixyInstructionsDTO();
-            singlePixyInstructionsDTO.setPixyInstructionRepeatDTOSClient(getPixyRepeatDtoByIDAndType(sessionPixies,sessionId, SessionPixy.TYPE_CLIENT));
+            singlePixyInstructionsDTO.setPixyInstructionRepeatDTOSClient(getPixyRepeatDtoByIDAndType(sessionId, SessionPixy.TYPE_CLIENT));
         } else if (justServer != null && justServer && (justClient == null || !justClient)) { /*else if justServer send true -> just session instruction and number of the repeat of it for server type of this session id comes to result*/
             SinglePixyInstructionsDTO singlePixyInstructionsDTO = new SinglePixyInstructionsDTO();
-            singlePixyInstructionsDTO.setPixyInstructionRepeatDTOSClient(getPixyRepeatDtoByIDAndType(sessionPixies,sessionId, SessionPixy.TYPE_SERVER));
+            singlePixyInstructionsDTO.setPixyInstructionRepeatDTOSClient(getPixyRepeatDtoByIDAndType(sessionId, SessionPixy.TYPE_SERVER));
             return singlePixyInstructionsDTO;
         }
         /*if session pixy by this session id not found throw exception*/
-        if (sessionPixies.size() == 0)
-            throw new PixyException(OperationResponse.ResponseStatusEnum.BAD_REQUEST, "موردی یافت نشد");
+
         /*else if justServer send false and justClient false or dont sent ->  session instruction and number of the repeat of it for all type of this session id comes to result*/
         SinglePixyInstructionsDTO singlePixyInstructionsDTO = new SinglePixyInstructionsDTO(new ArrayList<>(), new ArrayList<>());
-        List<SessionPixyInstructions> sessionPixyInstructionRepeatDTOS = sessionPixyInstructionsRepository.findAllBySessionPixy_SessionId(sessionId);
+        List<SessionPixyInstructions> sessionPixyInstructionRepeatDTOS = sessionPixyInstructionsRepository.findAllBySessionPixyNotNullAndSessionPixy_SessionId(sessionId);
 
         /*all session proxy instruction add in server and client list instructionRepeat separately for response*/
         sessionPixyInstructionRepeatDTOS.forEach(sessionPixyInstructions -> {
@@ -103,10 +101,8 @@ public class SessionPixyService {
         return singlePixyInstructionsDTO;
     }
 
-    private List<SessionPixyInstructionRepeatDTO> getPixyRepeatDtoByIDAndType(List<SessionPixy> sessionPixies, String sessionId, String type) throws PixyException {
+    private List<SessionPixyInstructionRepeatDTO> getPixyRepeatDtoByIDAndType(String sessionId, String type) throws PixyException {
         /*if session pixy by this session id and type not found throw exception*/
-        if (sessionPixies.stream().noneMatch(sessionPixy -> sessionPixy.getType() != null && sessionPixy.getType().equals(type)))
-            throw new PixyException(OperationResponse.ResponseStatusEnum.BAD_REQUEST, "موردی یافت نشد");
-        return sessionPixyInstructionsRepository.findAllBySessionPixy_SessionIdAndSessionPixy_Type(sessionId, type).stream().map(SessionPixyInstructionRepeatDTO::new).collect(Collectors.toList());
+        return sessionPixyInstructionsRepository.findAllBySessionPixyNotNullAndSessionPixy_SessionIdAndSessionPixy_Type(sessionId, type).stream().map(SessionPixyInstructionRepeatDTO::new).collect(Collectors.toList());
     }
 }
