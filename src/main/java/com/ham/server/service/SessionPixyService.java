@@ -17,7 +17,6 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -76,28 +75,22 @@ public class SessionPixyService {
     /*get single pixy session instructions and number of repeat of each instruction for client and server session from db*/
     @Transactional(readOnly = true)
     public SinglePixyInstructionsDTO getSessionPixyById(String sessionId, Boolean justClient, Boolean justServer) throws PixyException{
+        SinglePixyInstructionsDTO singlePixyInstructionsDTO = new SinglePixyInstructionsDTO();
         if (justClient != null && justClient && (justServer == null || !justServer)) {  /*if justClient send true -> just session instruction and number of the repeat of it for client type of this session id comes to result*/
-            SinglePixyInstructionsDTO singlePixyInstructionsDTO = new SinglePixyInstructionsDTO();
             singlePixyInstructionsDTO.setPixyInstructionRepeatDTOSClient(getPixyRepeatDtoByIDAndType(sessionId, SessionPixy.TYPE_CLIENT));
         } else if (justServer != null && justServer && (justClient == null || !justClient)) { /*else if justServer send true -> just session instruction and number of the repeat of it for server type of this session id comes to result*/
-            SinglePixyInstructionsDTO singlePixyInstructionsDTO = new SinglePixyInstructionsDTO();
             singlePixyInstructionsDTO.setPixyInstructionRepeatDTOSClient(getPixyRepeatDtoByIDAndType(sessionId, SessionPixy.TYPE_SERVER));
-            return singlePixyInstructionsDTO;
+        } else {
+            /*else if justServer send false and justClient false or dont sent ->  session instruction and number of the repeat of it for all type of this session id comes to result*/
+            List<SessionPixyInstructions> sessionPixyInstructionRepeatDTOS = sessionPixyInstructionsRepository.findAllBySessionPixyNotNullAndSessionPixy_SessionId(sessionId);
+            /*all session proxy instruction add in server and client list instructionRepeat separately for response*/
+            sessionPixyInstructionRepeatDTOS.forEach(sessionPixyInstructions -> {
+                if (sessionPixyInstructions.getSessionPixy().getType().equals(SessionPixy.TYPE_CLIENT))
+                    singlePixyInstructionsDTO.addToPixyInstructionRepeatDTOSClient(new SessionPixyInstructionRepeatDTO(sessionPixyInstructions));
+                else
+                    singlePixyInstructionsDTO.addToPixyInstructionRepeatDTOSServer(new SessionPixyInstructionRepeatDTO(sessionPixyInstructions));
+            });
         }
-        /*if session pixy by this session id not found throw exception*/
-
-        /*else if justServer send false and justClient false or dont sent ->  session instruction and number of the repeat of it for all type of this session id comes to result*/
-        SinglePixyInstructionsDTO singlePixyInstructionsDTO = new SinglePixyInstructionsDTO(new ArrayList<>(), new ArrayList<>());
-        List<SessionPixyInstructions> sessionPixyInstructionRepeatDTOS = sessionPixyInstructionsRepository.findAllBySessionPixyNotNullAndSessionPixy_SessionId(sessionId);
-
-        /*all session proxy instruction add in server and client list instructionRepeat separately for response*/
-        sessionPixyInstructionRepeatDTOS.forEach(sessionPixyInstructions -> {
-            if(sessionPixyInstructions.getSessionPixy().getType().equals(SessionPixy.TYPE_CLIENT))
-                singlePixyInstructionsDTO.addToPixyInstructionRepeatDTOSClient(new SessionPixyInstructionRepeatDTO(sessionPixyInstructions));
-            else
-                singlePixyInstructionsDTO.addToPixyInstructionRepeatDTOSServer(new SessionPixyInstructionRepeatDTO(sessionPixyInstructions));
-
-        });
         return singlePixyInstructionsDTO;
     }
 
